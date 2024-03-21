@@ -10,12 +10,21 @@ interface Camera {
     token: string;
 }
 
+interface PlayerParams {
+    camera: Camera,
+    videoElement: HTMLVideoElement,
+    previewElement?: HTMLVideoElement,
+    autoplay: boolean,
+}
+
 type StyleValue = Record<string,string >
 
 // Абстрактный класс Player, представляющий базовую модель плеера
 abstract class Player {
     readonly camera: Camera; // Камера, с которой работает плеер
     protected videoElement: HTMLVideoElement; // HTML элемент видео
+    protected previewElement?: HTMLVideoElement; // HTML элемент превью
+    protected autoplay: boolean = false; // автовоспроизведение
     protected stream: string | undefined; // URL потока видео
     protected preview: string | undefined; // URL превью видео
     readonly previewType: "video" | "image" = "video"; // Тип превью
@@ -23,11 +32,14 @@ abstract class Player {
     protected isLoaded: boolean = false; // Флаг загрузки видео
     protected player: ShakaPlayer | undefined; // Инстанс ShakaPlayer для воспроизведения видео
 
+
     // Конструктор класса Player
-    protected constructor(camera: Camera, videoElement: HTMLVideoElement) {
-        if (!camera.token) throw new Error("no token"); // Проверка наличия токена у камеры
-        this.camera = camera;
-        this.videoElement = videoElement;
+    protected constructor(params: PlayerParams) {
+        if (!params.camera.token) throw new Error("no token"); // Проверка наличия токена у камеры
+        this.camera = params.camera;
+        this.videoElement = params.videoElement;
+        this.previewElement = params.previewElement;
+        this.autoplay = params.autoplay || false;
     }
 
     // Метод для воспроизведения видео
@@ -91,8 +103,8 @@ abstract class Player {
 
 // Класс FlussonicPlayer, наследующийся от Player для работы с Flussonic сервером
 class FlussonicPlayer extends Player {
-    constructor(camera: Camera, videoElement: HTMLVideoElement) {
-        super(camera, videoElement);
+    constructor(params:PlayerParams) {
+        super(params);
         this.generatePreview();
         this.generateStream();
     }
@@ -119,8 +131,8 @@ class FlussonicPlayer extends Player {
 class ForpostPlayer extends Player {
     readonly previewType = "image";
 
-    constructor(camera: Camera, videoElement: HTMLVideoElement) {
-        super(camera, videoElement);
+    constructor(params:PlayerParams) {
+        super(params);
         this.generatePreview();
         this.generateStream();
     }
@@ -169,12 +181,12 @@ class ForpostPlayer extends Player {
 
 // Фабрика PlayerFactory для создания плееров в зависимости от типа сервера
 class PlayerFactory {
-    static createPlayer(camera: Camera, videoElement: HTMLVideoElement) {
-        switch (camera.serverType) {
+    static createPlayer(params:PlayerParams) {
+        switch (params.camera.serverType) {
             case "flussonic":
-                return new FlussonicPlayer(camera, videoElement);
+                return new FlussonicPlayer(params);
             case "forpost":
-                return new ForpostPlayer(camera, videoElement);
+                return new ForpostPlayer(params);
             default:
                 throw new Error("Unknown server type");
         }
