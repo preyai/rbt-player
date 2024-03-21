@@ -15,6 +15,7 @@ interface PlayerParams {
     videoElement: HTMLVideoElement,
     previewElement?: HTMLVideoElement,
     autoplay?: boolean,
+    size?:number
 }
 
 type StyleValue = Record<string,string >
@@ -29,6 +30,7 @@ abstract class Player {
     protected preview: string | undefined; // URL превью видео
     readonly previewType: "video" | "image" = "video"; // Тип превью
     protected aspectRatio: number = 1.6; // Соотношение сторон видео
+    protected size: number = .9; // Соотношение сторон видео
     protected isLoaded: boolean = false; // Флаг загрузки видео
     protected player: ShakaPlayer | undefined; // Инстанс ShakaPlayer для воспроизведения видео
 
@@ -39,6 +41,8 @@ abstract class Player {
         this.videoElement = params.videoElement;
         this.previewElement = params.previewElement;
         this.autoplay = params.autoplay || false;
+        if (params.size && params.size <= 1 && params.size >=0)
+            this.size = params.size
     }
 
     // Метод для воспроизведения видео
@@ -85,11 +89,11 @@ abstract class Player {
         const containerHeight = window.innerHeight;
         let newVideoWidth, newVideoHeight;
         if (containerWidth / aspectRatio > containerHeight) {
-            newVideoWidth = containerHeight * 0.9 * aspectRatio;
-            newVideoHeight = containerHeight * 0.9;
+            newVideoWidth = containerHeight * this.size * aspectRatio;
+            newVideoHeight = containerHeight * this.size;
         } else {
-            newVideoWidth = containerWidth * 0.9;
-            newVideoHeight = (containerWidth * 0.9) / aspectRatio;
+            newVideoWidth = containerWidth * this.size;
+            newVideoHeight = (containerWidth * this.size) / aspectRatio;
         }
         return {
             top: `${(containerHeight - newVideoHeight) / 2}px`,
