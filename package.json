@@ -1,8 +1,12 @@
 {
   "name": "rbt-player",
-  "version": "1.0.7",
+  "version": "1.0.8",
   "description": "",
   "main": "index.js",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/preyai/rbt-player.git"
+  },
   "files": ["dist", "LICENSE",
     "README.md", "package.json"],
   "scripts": {
