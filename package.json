@@ -1,19 +1,24 @@
 {
   "name": "rbt-player",
-  "version": "1.0.3",
-  "type": "module",
+  "version": "1.0.5",
+  "description": "",
   "main": "index.js",
-  "author": "preyai",
-  "license": "MIT",
   "files": ["dist", "LICENSE", "README.md", "package.json"],
   "scripts": {
-    "build": "tsc"
+    "dev": "ts-node-dev --exit-child src/index.ts",
+    "start": "ts-node src/index.ts"
+  },
+  "keywords": [],
+  "author": "preyai",
+  "license": "ISC",
+  "devDependencies": {
+    "@types/node": "^20.11.30",
+    "ts-node": "^10.9.2",
+    "ts-node-dev": "^2.0.0",
+    "typescript": "^5.4.3"
   },
   "dependencies": {
     "axios": "^1.6.8",
     "shaka-player": "^4.7.11"
-  },
-  "devDependencies": {
-    "typescript": "^5.4.3"
   }
 }
