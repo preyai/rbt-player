@@ -109,7 +109,28 @@ abstract class Player {
         if (!ShakaPlayer.isBrowserSupported())
             return console.error("Browser does not support Shaka Player"); // Проверка поддержки Shaka Player
         const player = this.player || new ShakaPlayer(); // Создание нового инстанса ShakaPlayer
-        player.configure({});
+        player.configure({
+            streaming: {
+                retryParameters: {
+                    timeout: 30000,
+                    stallTimeout: 5000,
+                    connectionTimeout: 10000,
+                    maxAttempts: 5,
+                    baseDelay: 1000,
+                    backoffFactor: 2,
+                    fuzzFactor: 0.5,
+                },
+                bufferBehind: 60,
+                // Обработчик ошибок потока
+                failureCallback: (e: any) => {
+                    console.log(`${this.stream} stream fall ${e.code}`); // Вывод сообщения о сбое потока
+                    if (e.severity === 2) {
+                        // Повторная загрузка видео с задержкой 10 секунд
+                        setTimeout(() => this.initializeVideoStream(), 1000 * 10);
+                    }
+                },
+            },
+        });
         player.attach(this.videoElement);
         player
             .load(this.stream)
