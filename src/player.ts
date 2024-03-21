@@ -1,4 +1,7 @@
-import Shaka from "shaka-player/dist/shaka-player.compiled";
+/// <reference path="../node_modules/shaka-player/dist/shaka-player.compiled.d.ts" />
+
+// @ts-ignore
+import { Player as ShakaPlayer } from "shaka-player";
 import axios from "axios";
 interface Camera {
     serverType: string;
@@ -18,10 +21,10 @@ abstract class Player {
     readonly previewType: "video" | "image" = "video"; // Тип превью
     protected aspectRatio: number = 1.6; // Соотношение сторон видео
     protected isLoaded: boolean = false; // Флаг загрузки видео
-    protected player: Shaka.Player | undefined; // Инстанс ShakaPlayer для воспроизведения видео
+    protected player: ShakaPlayer | undefined; // Инстанс ShakaPlayer для воспроизведения видео
 
     // Конструктор класса Player
-    constructor(camera: Camera, videoElement: HTMLVideoElement) {
+    protected constructor(camera: Camera, videoElement: HTMLVideoElement) {
         if (!camera.token) throw new Error("no token"); // Проверка наличия токена у камеры
         this.camera = camera;
         this.videoElement = videoElement;
@@ -74,9 +77,9 @@ abstract class Player {
     // Метод для инициализации видеопотока
     initializeVideoStream(): void {
         if (!this.stream) return console.error("Doesn't have stream url"); // Проверка наличия URL потока
-        if (!Shaka.Player.isBrowserSupported())
+        if (!ShakaPlayer.isBrowserSupported())
             return console.error("Browser does not support Shaka Player"); // Проверка поддержки Shaka Player
-        const player = this.player || new Shaka.Player(); // Создание нового инстанса ShakaPlayer
+        const player = this.player || new ShakaPlayer(); // Создание нового инстанса ShakaPlayer
         player.configure({});
         player.attach(this.videoElement);
         player
