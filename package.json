@@ -6,6 +6,7 @@
   "files": ["dist", "LICENSE", "README.md", "package.json"],
   "scripts": {
     "dev": "ts-node-dev --exit-child src/index.ts",
+    "build": "tsc",
     "start": "ts-node src/index.ts"
   },
   "keywords": [],
