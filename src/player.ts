@@ -14,7 +14,7 @@ interface PlayerParams {
     camera: Camera,
     videoElement: HTMLVideoElement,
     previewElement?: HTMLVideoElement,
-    autoplay: boolean,
+    autoplay?: boolean,
 }
 
 type StyleValue = Record<string,string >
@@ -31,7 +31,6 @@ abstract class Player {
     protected aspectRatio: number = 1.6; // Соотношение сторон видео
     protected isLoaded: boolean = false; // Флаг загрузки видео
     protected player: ShakaPlayer | undefined; // Инстанс ShakaPlayer для воспроизведения видео
-
 
     // Конструктор класса Player
     protected constructor(params: PlayerParams) {
@@ -52,6 +51,20 @@ abstract class Player {
         this.videoElement.pause();
     }
 
+    setPreview(){
+        if (!this.preview) {
+            return;
+        }
+
+        if (this.previewType === "image") {
+            this.videoElement.poster = this.preview;
+            if (this.previewElement)
+                this.previewElement.poster = this.preview;
+        } else if (this.previewType === "video" && this.previewElement) {
+            this.previewElement.src = this.preview;
+        }
+    }
+
     // Абстрактные методы для генерации превью и потока видео
     abstract generatePreview(): void;
     abstract generateStream(from?: number, length?: number): void;
@@ -66,7 +79,7 @@ abstract class Player {
     }
 
     // Метод для вычисления размеров видео
-    getSize(): StyleValue {
+     getSize(): StyleValue {
         const aspectRatio = this.aspectRatio;
         const containerWidth = window.innerWidth;
         const containerHeight = window.innerHeight;
@@ -96,7 +109,7 @@ abstract class Player {
         player.attach(this.videoElement);
         player
             .load(this.stream)
-            .then(() => this.videoElement.play())
+            .then(() => this.autoplay && this.play())
             .catch((err:any) => console.error(err.message));
     }
 }
@@ -113,6 +126,7 @@ class FlussonicPlayer extends Player {
     generatePreview = (): void => {
         const { url, token } = this.camera;
         this.preview = `${url}/preview.mp4?token=${token}`;
+        this.setPreview()
     };
 
     // Метод для генерации потока видео
@@ -162,6 +176,7 @@ class ForpostPlayer extends Player {
         axios.post(_url, postParams.toString()).then((response) => {
             const jsonData = response.data;
             this.preview = jsonData["URL"] || "empty";
+            this.setPreview()
         });
     };
 
