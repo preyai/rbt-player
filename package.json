@@ -1,12 +1,13 @@
 {
   "name": "rbt-player",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "type": "module",
   "main": "index.js",
   "author": "preyai",
   "license": "MIT",
+  "files": ["dist", "LICENSE", "README.md", "package.json"],
   "scripts": {
-    "tsc": "tsc"
+    "build": "tsc"
   },
   "dependencies": {
     "axios": "^1.6.8",
