@@ -3,7 +3,8 @@
   "version": "1.0.6",
   "description": "",
   "main": "index.js",
-  "files": ["dist", "LICENSE", "README.md", "package.json"],
+  "files": ["dist", "LICENSE",
+    "README.md", "package.json"],
   "scripts": {
     "dev": "ts-node-dev --exit-child src/index.ts",
     "build": "tsc",
@@ -11,7 +12,7 @@
   },
   "keywords": [],
   "author": "preyai",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@types/node": "^20.11.30",
     "ts-node": "^10.9.2",
