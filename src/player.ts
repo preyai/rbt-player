@@ -3,6 +3,7 @@
 // @ts-ignore
 import { Player as ShakaPlayer } from "shaka-player";
 import axios from "axios";
+import dayjs from "dayjs";
 interface Camera {
     serverType: string;
     hlsMode?: string;
@@ -226,6 +227,80 @@ class ForpostPlayer extends Player {
     };
 }
 
+class NimblePlayer extends Player {
+    constructor(params:PlayerParams) {
+        super(params);
+        this.generatePreview();
+        this.generateStream();
+    }
+
+    // Метод для генерации превью видео
+    generatePreview = (): void => {
+        const { url, token } = this.camera;
+        this.preview = `${url}/dvr_thumbnail.mp4?wmsAuthSign=${token}`;
+        this.setPreview()
+    };
+
+    // Метод для генерации потока видео
+    generateStream = (from?: number, length?: number): void => {
+        const { url, hlsMode, token } = this.camera;
+        if (from && length) {
+            this.stream = `${url}/playlist_dvr_range-${from}-${length}.m3u8?wmsAuthSign=${token}`;
+        } else {
+            this.stream = `${url}/playlist.m3u8?wmsAuthSign=${token}`;
+        }
+        this.initializeVideoStream();
+    };
+}
+
+class MacroscopPlayer extends Player {
+    readonly previewType = "image";
+    constructor(params:PlayerParams) {
+        super(params);
+        this.generatePreview();
+        this.generateStream();
+    }
+
+    // Метод для генерации превью видео
+    generatePreview = (): void => {
+        const { url, token } = this.camera;
+        let resultingString =
+            "&withcontenttype=true&mode=realtime" +
+            "&resolutionx=480&resolutiony=270&streamtype=mainvideo";
+        let baseURL = new URL(url);
+        baseURL.pathname = "/site";
+        baseURL.search = token ? (baseURL.search || "") +  `&${token}`  : baseURL.search || "";
+        baseURL.search += resultingString;
+        this.preview = baseURL.href;
+        this.setPreview()
+    };
+
+    // Метод для генерации потока видео
+    generateStream = (from?: number, length?: number): void => {
+        const DATE_FORMAT:string = 'DD.MM.YYYY HH:mm:ss'
+        const { url, hlsMode, token } = this.camera;
+        let parameters = ""
+        if (from && length) {
+            const formattedStartDate = dayjs(from).format(DATE_FORMAT);
+            const formattedEndDate = dayjs(from).add(length, 'seconds').format(DATE_FORMAT);
+            parameters = `&starttime=${formattedStartDate}&endtime=${formattedEndDate}`;
+        }
+        let _url =
+            url +
+            (token ? `&${token}` : "") +
+            parameters;
+        axios.get(_url).then((response) => {
+            let resourceString = response.data;
+            let baseURL = new URL(url);
+            baseURL.pathname = "";
+            baseURL.search = "";
+            let streamURL = baseURL.href + "hls/" + resourceString;
+            this.initializeVideoStream();
+        });
+    };
+}
+
+
 // Фабрика PlayerFactory для создания плееров в зависимости от типа сервера
 class PlayerFactory {
     static createPlayer(params:PlayerParams) {
@@ -234,6 +309,10 @@ class PlayerFactory {
                 return new FlussonicPlayer(params);
             case "forpost":
                 return new ForpostPlayer(params);
+            case "nimble":
+                return  new NimblePlayer(params);
+            case "macroscop":
+                return  new MacroscopPlayer(params);
             default:
                 throw new Error("Unknown server type");
         }
