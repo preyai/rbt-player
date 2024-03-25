@@ -32,7 +32,7 @@ abstract class Player {
     protected aspectRatio: number = 1.6; // Соотношение сторон видео
     protected size: number = .9; // Соотношение сторон видео
     protected isLoaded: boolean = false; // Флаг загрузки видео
-    protected player: ShakaPlayer | undefined; // Инстанс ShakaPlayer для воспроизведения видео
+    player: ShakaPlayer | undefined; // Инстанс ShakaPlayer для воспроизведения видео
 
     // Конструктор класса Player
     protected constructor(params: PlayerParams) {
@@ -103,12 +103,19 @@ abstract class Player {
         };
     }
 
+    createPlayer():ShakaPlayer {
+        const player = new ShakaPlayer()
+        this.player = player
+        return player
+    }
+
     // Метод для инициализации видеопотока
     initializeVideoStream(): void {
         if (!this.stream) return console.error("Doesn't have stream url"); // Проверка наличия URL потока
         if (!ShakaPlayer.isBrowserSupported())
             return console.error("Browser does not support Shaka Player"); // Проверка поддержки Shaka Player
-        const player = this.player || new ShakaPlayer(); // Создание нового инстанса ShakaPlayer
+        const player = this.player || this.createPlayer(); // Создание нового инстанса ShakaPlayer
+
         player.configure({
             streaming: {
                 retryParameters: {
