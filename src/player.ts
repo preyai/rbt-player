@@ -143,7 +143,12 @@ abstract class Player {
         player
             .load(this.stream)
             .then(() => this.autoplay && this.play())
-            .catch((err:any) => console.error(err.message));
+            .catch((err:any) => console.error("Error loading stream", err));
+    }
+
+    // Метод для удаления плеера
+    onDestroy(): void {
+        this.player?.destroy()
     }
 }
 
@@ -188,8 +193,8 @@ class ForpostPlayer extends Player {
     getForpostFormat = (from?: number) => {
         const url = this.camera.url;
         const speed = 1;
-        const speedStr = speed < 1 ? speed.toFixed(2) : speed.toFixed(0);
-        const tz = new Date().getTimezoneOffset() * 60;
+        const speedStr = speed.toFixed(0);
+        const tz = new Date().getTimezoneOffset() * -60;
         const parameters = from ? `&TS=${from}&TZ=${tz}&Speed=${speedStr}` : "";
         let urlBase = new URL(url + parameters + `&${this.camera.token}`);
         if (!urlBase || !urlBase.searchParams) {
@@ -208,8 +213,15 @@ class ForpostPlayer extends Player {
         const _url = urlBase.href;
         axios.post(_url, postParams.toString()).then((response) => {
             const jsonData = response.data;
-            this.preview = jsonData["URL"] || "empty";
-            this.setPreview()
+            const _preview:string|undefined = jsonData["URL"]
+            if (_preview) {
+                axios.head(_preview).then((response) => {
+                    if (response.status === 200) {
+                        this.preview = _preview;
+                        this.setPreview()
+                    }
+                })
+            }
         });
     };
 
@@ -223,7 +235,10 @@ class ForpostPlayer extends Player {
             const jsonData = response.data;
             this.stream = jsonData["URL"] || "empty";
             this.initializeVideoStream();
-        });
+        }).catch(() => {
+            console.log("Не удалось загрузить поток", _url, postParams.toString())
+            this.player.detach()
+        })
     };
 }
 
@@ -294,7 +309,7 @@ class MacroscopPlayer extends Player {
             let baseURL = new URL(url);
             baseURL.pathname = "";
             baseURL.search = "";
-            let streamURL = baseURL.href + "hls/" + resourceString;
+            this.stream = baseURL.href + "hls/" + resourceString;
             this.initializeVideoStream();
         });
     };
