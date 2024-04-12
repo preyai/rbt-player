@@ -61,7 +61,9 @@ class ZoomController {
 
     private stopDrag = (event: MouseEvent) => {
         event.preventDefault();
-        setTimeout(() => { this.isDragging = false; }, 500);
+        setTimeout(() => {
+            this.isDragging = false;
+        }, 500);
         document.removeEventListener("mousemove", this.drag);
         document.removeEventListener("mouseup", this.stopDrag);
     };
@@ -112,4 +114,4 @@ class ZoomController {
     }
 }
 
-export default ZoomController;
+export {ZoomController};
