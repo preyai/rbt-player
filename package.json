@@ -1,37 +1,37 @@
 {
   "name": "rbt-player",
-  "version": "1.0.13",
-  "description": "",
-  "main": "index.js",
+  "version": "1.1.1",
   "repository": {
     "type": "git",
     "url": "git+https://github.com/preyai/rbt-player.git"
   },
+  "type": "module",
   "files": [
     "dist",
     "LICENSE",
     "README.md",
     "package.json"
   ],
-  "scripts": {
-    "dev": "ts-node-dev --exit-child src/index.ts",
-    "build": "yarn run clean && tsc && node minify",
-    "clean": "rm -rf dist",
-    "start": "ts-node src/index.ts"
+  "main": "./dist/rbt-player.umd.cjs",
+  "module": "./dist/rbt-player.js",
+  "exports": {
+    ".": {
+      "import": "./dis"
+    }
   },
-  "keywords": [],
-  "author": "preyai",
-  "license": "MIT",
-  "devDependencies": {
-    "@types/node": "^20.11.30",
-    "terser": "^5.29.2",
-    "ts-node": "^10.9.2",
-    "ts-node-dev": "^2.0.0",
-    "typescript": "^5.4.3"
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "dependencies": {
     "axios": "^1.6.8",
     "dayjs": "^1.11.10",
     "shaka-player": "^4.7.11"
+  },
+  "devDependencies": {
+    "typescript": "^5.2.2",
+    "vite": "^5.2.0",
+    "vite-plugin-dts": "^3.8.1"
   }
 }

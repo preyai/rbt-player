@@ -258,7 +258,7 @@ class NimblePlayer extends Player {
 
     // Метод для генерации потока видео
     generateStream = (from?: number, length?: number): void => {
-        const { url, hlsMode, token } = this.camera;
+        const { url, token } = this.camera;
         if (from && length) {
             this.stream = `${url}/playlist_dvr_range-${from}-${length}.m3u8?wmsAuthSign=${token}`;
         } else {
@@ -293,7 +293,7 @@ class MacroscopPlayer extends Player {
     // Метод для генерации потока видео
     generateStream = (from?: number, length?: number): void => {
         const DATE_FORMAT:string = 'DD.MM.YYYY HH:mm:ss'
-        const { url, hlsMode, token } = this.camera;
+        const { url, token } = this.camera;
         let parameters = ""
         if (from && length) {
             const formattedStartDate = dayjs(from).format(DATE_FORMAT);
