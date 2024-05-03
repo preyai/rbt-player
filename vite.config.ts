@@ -7,7 +7,8 @@ export default defineConfig({
         lib:{
             entry: "./src/main.ts",
             formats: ['es','umd'],
-            name: "rbtPlayer"
+            name: "rbtPlayer",
+            fileName: (format) => `rbt-player.${format}.js`
         }
     },
     plugins: [
