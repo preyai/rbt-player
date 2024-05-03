@@ -1,9 +1,10 @@
 /// <reference path="../node_modules/shaka-player/dist/shaka-player.compiled.d.ts" />
 
 // @ts-ignore
-import { Player as ShakaPlayer } from "shaka-player";
+import {Player as ShakaPlayer} from "shaka-player";
 import axios from "axios";
 import dayjs from "dayjs";
+
 interface Camera {
     serverType: string;
     hlsMode?: string;
@@ -16,10 +17,10 @@ interface PlayerParams {
     videoElement: HTMLVideoElement,
     previewElement?: HTMLVideoElement,
     autoplay?: boolean,
-    size?:number
+    size?: number
 }
 
-type StyleValue = Record<string,string >
+type StyleValue = Record<string, string>
 
 // Абстрактный класс Player, представляющий базовую модель плеера
 abstract class Player {
@@ -42,13 +43,16 @@ abstract class Player {
         this.videoElement = params.videoElement;
         this.previewElement = params.previewElement;
         this.autoplay = params.autoplay || false;
-        if (params.size && params.size <= 1 && params.size >=0)
+        if (params.size && params.size <= 1 && params.size >= 0)
             this.size = params.size
     }
 
     // Метод для воспроизведения видео
     play() {
-        this.videoElement.play();
+        if (this.player)
+            return this.videoElement.play();
+        else
+            return this.initializeVideoStream()
     }
 
     // Метод для паузы видео
@@ -56,7 +60,7 @@ abstract class Player {
         this.videoElement.pause();
     }
 
-    setPreview(){
+    setPreview() {
         if (!this.preview) {
             return;
         }
@@ -72,6 +76,7 @@ abstract class Player {
 
     // Абстрактные методы для генерации превью и потока видео
     abstract generatePreview(): void;
+
     abstract generateStream(from?: number, length?: number): void;
 
     // Метод для расчета соотношения сторон видео
@@ -84,7 +89,7 @@ abstract class Player {
     }
 
     // Метод для вычисления размеров видео
-     getSize(): StyleValue {
+    getSize(): StyleValue {
         const aspectRatio = this.aspectRatio;
         const containerWidth = window.innerWidth;
         const containerHeight = window.innerHeight;
@@ -104,46 +109,48 @@ abstract class Player {
         };
     }
 
-    createPlayer():ShakaPlayer {
+    createPlayer(): ShakaPlayer {
         const player = new ShakaPlayer()
         this.player = player
         return player
     }
 
     // Метод для инициализации видеопотока
-    initializeVideoStream(): void {
-        if (!this.stream) return console.error("Doesn't have stream url"); // Проверка наличия URL потока
-        if (!ShakaPlayer.isBrowserSupported())
-            return console.error("Browser does not support Shaka Player"); // Проверка поддержки Shaka Player
-        const player = this.player || this.createPlayer(); // Создание нового инстанса ShakaPlayer
+    initializeVideoStream(): Promise<void> {
+        return new Promise((resolve, reject) => {
+            if (!this.stream) reject("Doesn't have stream url"); // Проверка наличия URL потока
+            if (!ShakaPlayer.isBrowserSupported())
+                return reject("Browser does not support Shaka Player"); // Проверка поддержки Shaka Player
+            const player = this.player || this.createPlayer(); // Создание нового инстанса ShakaPlayer
 
-        player.configure({
-            streaming: {
-                retryParameters: {
-                    timeout: 30000,
-                    stallTimeout: 5000,
-                    connectionTimeout: 10000,
-                    maxAttempts: 5,
-                    baseDelay: 1000,
-                    backoffFactor: 2,
-                    fuzzFactor: 0.5,
+            player.configure({
+                streaming: {
+                    retryParameters: {
+                        timeout: 30000,
+                        stallTimeout: 5000,
+                        connectionTimeout: 10000,
+                        maxAttempts: 5,
+                        baseDelay: 1000,
+                        backoffFactor: 2,
+                        fuzzFactor: 0.5,
+                    },
+                    bufferBehind: 60,
+                    // Обработчик ошибок потока
+                    failureCallback: (e: any) => {
+                        console.log(`${this.stream} stream fall ${e.code}`); // Вывод сообщения о сбое потока
+                        if (e.severity === 2) {
+                            // Повторная загрузка видео с задержкой 10 секунд
+                            setTimeout(() => this.initializeVideoStream(), 1000 * 10);
+                        }
+                    },
                 },
-                bufferBehind: 60,
-                // Обработчик ошибок потока
-                failureCallback: (e: any) => {
-                    console.log(`${this.stream} stream fall ${e.code}`); // Вывод сообщения о сбое потока
-                    if (e.severity === 2) {
-                        // Повторная загрузка видео с задержкой 10 секунд
-                        setTimeout(() => this.initializeVideoStream(), 1000 * 10);
-                    }
-                },
-            },
-        });
-        player.attach(this.videoElement);
-        player
-            .load(this.stream)
-            .then(() => this.autoplay && this.play())
-            .catch((err:any) => console.error("Error loading stream", err));
+            });
+            player.attach(this.videoElement);
+            player
+                .load(this.stream)
+                .then(() => this.autoplay && resolve(this.play()))
+                .catch((err: any) => reject(err));
+        })
     }
 
     // Метод для удаления плеера
@@ -154,7 +161,7 @@ abstract class Player {
 
 // Класс FlussonicPlayer, наследующийся от Player для работы с Flussonic сервером
 class FlussonicPlayer extends Player {
-    constructor(params:PlayerParams) {
+    constructor(params: PlayerParams) {
         super(params);
         this.generatePreview();
         this.generateStream();
@@ -162,20 +169,21 @@ class FlussonicPlayer extends Player {
 
     // Метод для генерации превью видео
     generatePreview = (): void => {
-        const { url, token } = this.camera;
+        const {url, token} = this.camera;
         this.preview = `${url}/preview.mp4?token=${token}`;
         this.setPreview()
     };
 
     // Метод для генерации потока видео
     generateStream = (from?: number, length?: number): void => {
-        const { url, hlsMode, token } = this.camera;
+        const {url, hlsMode, token} = this.camera;
         const time = from && length ? `-${from}-${length}` : "";
         this.stream =
             hlsMode === "fmp4"
                 ? `${url}/index${time}.fmp4.m3u8?token=${token}`
                 : `${url}/index${time}.m3u8?token=${token}`;
-        this.initializeVideoStream();
+        if (this.autoplay)
+            this.play();
     };
 }
 
@@ -183,7 +191,7 @@ class FlussonicPlayer extends Player {
 class ForpostPlayer extends Player {
     readonly previewType = "image";
 
-    constructor(params:PlayerParams) {
+    constructor(params: PlayerParams) {
         super(params);
         this.generatePreview();
         this.generateStream();
@@ -213,7 +221,7 @@ class ForpostPlayer extends Player {
         const _url = urlBase.href;
         axios.post(_url, postParams.toString()).then((response) => {
             const jsonData = response.data;
-            const _preview:string|undefined = jsonData["URL"]
+            const _preview: string | undefined = jsonData["URL"]
             if (_preview) {
                 axios.head(_preview).then((response) => {
                     if (response.status === 200) {
@@ -234,7 +242,8 @@ class ForpostPlayer extends Player {
         axios.post(_url, postParams.toString()).then((response) => {
             const jsonData = response.data;
             this.stream = jsonData["URL"] || "empty";
-            this.initializeVideoStream();
+            if (this.autoplay)
+                this.play();
         }).catch(() => {
             console.log("Не удалось загрузить поток", _url, postParams.toString())
             this.player.detach()
@@ -243,7 +252,7 @@ class ForpostPlayer extends Player {
 }
 
 class NimblePlayer extends Player {
-    constructor(params:PlayerParams) {
+    constructor(params: PlayerParams) {
         super(params);
         this.generatePreview();
         this.generateStream();
@@ -251,26 +260,28 @@ class NimblePlayer extends Player {
 
     // Метод для генерации превью видео
     generatePreview = (): void => {
-        const { url, token } = this.camera;
+        const {url, token} = this.camera;
         this.preview = `${url}/dvr_thumbnail.mp4?wmsAuthSign=${token}`;
         this.setPreview()
     };
 
     // Метод для генерации потока видео
     generateStream = (from?: number, length?: number): void => {
-        const { url, token } = this.camera;
+        const {url, token} = this.camera;
         if (from && length) {
             this.stream = `${url}/playlist_dvr_range-${from}-${length}.m3u8?wmsAuthSign=${token}`;
         } else {
             this.stream = `${url}/playlist.m3u8?wmsAuthSign=${token}`;
         }
-        this.initializeVideoStream();
+        if (this.autoplay)
+            this.play();
     };
 }
 
 class MacroscopPlayer extends Player {
     readonly previewType = "image";
-    constructor(params:PlayerParams) {
+
+    constructor(params: PlayerParams) {
         super(params);
         this.generatePreview();
         this.generateStream();
@@ -278,13 +289,13 @@ class MacroscopPlayer extends Player {
 
     // Метод для генерации превью видео
     generatePreview = (): void => {
-        const { url, token } = this.camera;
+        const {url, token} = this.camera;
         let resultingString =
             "&withcontenttype=true&mode=realtime" +
             "&resolutionx=480&resolutiony=270&streamtype=mainvideo";
         let baseURL = new URL(url);
         baseURL.pathname = "/site";
-        baseURL.search = token ? (baseURL.search || "") +  `&${token}`  : baseURL.search || "";
+        baseURL.search = token ? (baseURL.search || "") + `&${token}` : baseURL.search || "";
         baseURL.search += resultingString;
         this.preview = baseURL.href;
         this.setPreview()
@@ -292,8 +303,8 @@ class MacroscopPlayer extends Player {
 
     // Метод для генерации потока видео
     generateStream = (from?: number, length?: number): void => {
-        const DATE_FORMAT:string = 'DD.MM.YYYY HH:mm:ss'
-        const { url, token } = this.camera;
+        const DATE_FORMAT: string = 'DD.MM.YYYY HH:mm:ss'
+        const {url, token} = this.camera;
         let parameters = ""
         if (from && length) {
             const formattedStartDate = dayjs(from).format(DATE_FORMAT);
@@ -310,7 +321,8 @@ class MacroscopPlayer extends Player {
             baseURL.pathname = "";
             baseURL.search = "";
             this.stream = baseURL.href + "hls/" + resourceString;
-            this.initializeVideoStream();
+            if (this.autoplay)
+                this.play();
         });
     };
 }
@@ -318,16 +330,16 @@ class MacroscopPlayer extends Player {
 
 // Фабрика PlayerFactory для создания плееров в зависимости от типа сервера
 class PlayerFactory {
-    static createPlayer(params:PlayerParams) {
+    static createPlayer(params: PlayerParams) {
         switch (params.camera.serverType) {
             case "flussonic":
                 return new FlussonicPlayer(params);
             case "forpost":
                 return new ForpostPlayer(params);
             case "nimble":
-                return  new NimblePlayer(params);
+                return new NimblePlayer(params);
             case "macroscop":
-                return  new MacroscopPlayer(params);
+                return new MacroscopPlayer(params);
             default:
                 throw new Error("Unknown server type");
         }
@@ -335,4 +347,4 @@ class PlayerFactory {
 }
 
 // Экспорт классов FlussonicPlayer, ForpostPlayer, Player и PlayerFactory
-export { FlussonicPlayer, ForpostPlayer, Player, PlayerFactory };
+export {FlussonicPlayer, ForpostPlayer, Player, PlayerFactory};
