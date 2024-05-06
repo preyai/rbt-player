@@ -178,12 +178,15 @@ class FlussonicPlayer extends Player {
 
     // Метод для генерации потока видео
     generateStream = (from?: number, length?: number): void => {
+        this.player?.detach()
         const {url, hlsMode, token} = this.camera;
         const time = from && length ? `-${from}-${length}` : "";
         this.stream =
             hlsMode === "fmp4"
                 ? `${url}/index${time}.fmp4.m3u8?token=${token}`
                 : `${url}/index${time}.m3u8?token=${token}`;
+        if (this.autoplay)
+            this.play()
     };
 }
 
@@ -235,6 +238,7 @@ class ForpostPlayer extends Player {
 
     // Метод для генерации потока видео
     generateStream = (from?: number): void => {
+        this.player?.detach()
         const urlBase = new URL(this.getForpostFormat(from));
         const postParams = new URLSearchParams(urlBase.searchParams);
         urlBase.search = "";
@@ -242,9 +246,10 @@ class ForpostPlayer extends Player {
         axios.post(_url, postParams.toString()).then((response) => {
             const jsonData = response.data;
             this.stream = jsonData["URL"] || "empty";
+            if (this.autoplay)
+                this.play();
         }).catch(() => {
             console.log("Не удалось загрузить поток", _url, postParams.toString())
-            this.player.detach()
         })
     };
 }
@@ -265,6 +270,7 @@ class NimblePlayer extends Player {
 
     // Метод для генерации потока видео
     generateStream = (from?: number, length?: number): void => {
+        this.player?.detach()
         const {url, token} = this.camera;
         if (from && length) {
             this.stream = `${url}/playlist_dvr_range-${from}-${length}.m3u8?wmsAuthSign=${token}`;
@@ -301,6 +307,7 @@ class MacroscopPlayer extends Player {
 
     // Метод для генерации потока видео
     generateStream = (from?: number, length?: number): void => {
+        this.player?.detach()
         const DATE_FORMAT: string = 'DD.MM.YYYY HH:mm:ss'
         const {url, token} = this.camera;
         let parameters = ""
@@ -319,6 +326,8 @@ class MacroscopPlayer extends Player {
             baseURL.pathname = "";
             baseURL.search = "";
             this.stream = baseURL.href + "hls/" + resourceString;
+            if (this.autoplay)
+                this.play();
         });
     };
 }
