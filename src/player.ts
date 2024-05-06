@@ -49,14 +49,16 @@ abstract class Player {
 
     // Метод для воспроизведения видео
     play() {
-        if (this.player)
+        if (this.player) {
+            this.autoplay = true;
             return this.videoElement.play();
-        else
+        } else
             return this.initializeVideoStream()
     }
 
     // Метод для паузы видео
     pause() {
+        this.autoplay = false;
         this.videoElement.pause();
     }
 
@@ -182,8 +184,6 @@ class FlussonicPlayer extends Player {
             hlsMode === "fmp4"
                 ? `${url}/index${time}.fmp4.m3u8?token=${token}`
                 : `${url}/index${time}.m3u8?token=${token}`;
-        if (this.autoplay)
-            this.play();
     };
 }
 
@@ -242,8 +242,6 @@ class ForpostPlayer extends Player {
         axios.post(_url, postParams.toString()).then((response) => {
             const jsonData = response.data;
             this.stream = jsonData["URL"] || "empty";
-            if (this.autoplay)
-                this.play();
         }).catch(() => {
             console.log("Не удалось загрузить поток", _url, postParams.toString())
             this.player.detach()
@@ -321,8 +319,6 @@ class MacroscopPlayer extends Player {
             baseURL.pathname = "";
             baseURL.search = "";
             this.stream = baseURL.href + "hls/" + resourceString;
-            if (this.autoplay)
-                this.play();
         });
     };
 }
