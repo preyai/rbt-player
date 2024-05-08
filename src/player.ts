@@ -3,7 +3,7 @@
 // @ts-ignore
 import {Player as ShakaPlayer} from "shaka-player";
 import axios from "axios";
-import dayjs from "dayjs";
+import dayjs from "dayjs"
 
 interface Camera {
     serverType: string;
@@ -226,15 +226,23 @@ class ForpostPlayer extends Player {
             const jsonData = response.data;
             const _preview: string | undefined = jsonData["URL"]
             if (_preview) {
-                axios.head(_preview).then((response) => {
-                    if (response.status === 200) {
-                        this.preview = _preview;
-                        this.setPreview()
-                    }
-                })
+
+                this.preview = _preview;
+                this.setPreview()
+
             }
         });
     };
+
+    forpostInit = () => {
+        this.initializeVideoStream()
+            .then(() => this.play())
+            .catch((err) => {
+                    if (err.code !== 4000)
+                        this.forpostInit()
+                }
+            )
+    }
 
     // Метод для генерации потока видео
     generateStream = (from?: number): void => {
@@ -247,7 +255,7 @@ class ForpostPlayer extends Player {
             const jsonData = response.data;
             this.stream = jsonData["URL"] || "empty";
             if (this.autoplay)
-                this.play();
+                this.forpostInit()
         }).catch(() => {
             console.log("Не удалось загрузить поток", _url, postParams.toString())
         })
